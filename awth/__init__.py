@@ -1,8 +1,8 @@
 # import 1password
 
 # all aws (apple with sauce)
-from awsmfa.config import initial_setup
-from awsmfa.util import log_error_and_exit, prompter
+from awth.config import initial_setup
+from awth.util import log_error_and_exit, prompter
 import boto3
 from botocore.exceptions import ClientError, ParamValidationError
 
@@ -22,8 +22,7 @@ from os import path, environ
 import sys
 
 logger = logging.getLogger('awth')
-# AWS_CREDS_PATH = f'{path.expanduser('~')}/.aws/credentials'
-AWS_CREDS_PATH = path.expanduser(os.environ.get('AWS_SHARED_CREDENTIALS_FILE', '~/.aws/credentials'))
+AWS_CREDS_PATH = path.expanduser(environ.get('AWS_SHARED_CREDENTIALS_FILE', '~/.aws/credentials'))
 
 
 def setup_logger(level=logging.DEBUG):
@@ -83,7 +82,7 @@ def setup_logger(level=logging.DEBUG):
               help="Refresh credentials even if currently valid.",
               required=False)
 @click.option('--log-level',
-              type=click.choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'], case_sensitive=False),
+              type=click.Choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'], case_sensitive=False),
               help="Set log level",
               required=False,
               default='DEBUG')
@@ -91,16 +90,15 @@ def setup_logger(level=logging.DEBUG):
               help="Setup a new log term credentials section",
               is_flag=bool,
               required=False)
-@click.option('--token', '--mfa-token',
+@click.option('--token',
               help="Provide MFA token as an argument",
-              required=False)
-                        default=None)
+              required=False,
+              default=None)
 @click.option('--region',
               help="AWS STS Region",
               required=False,
               type=str)
 @click.option('--keychain',
-              action="store_true",
               is_flag=bool,
               help="Use system keychain to store or retrieve long term credentials",
               required=False)
@@ -109,12 +107,13 @@ def main(device: str,
          profile: str,
          long_term_suffix: str,
          short_term_suffix: str,
-         role: str,
+         assume_role: str,
          role_session_name: str,
          force: bool,
          log_level: str,
          setup: bool,
-         token: str,
+         token: str = "",
+         region: str = "eu-central-1",
          keychain: bool = False):
 
     # set up logging before we begin
@@ -161,15 +160,16 @@ def get_config(aws_creds_path: str = ""):
     return config
 
 
-def validate(profile: str = "",
+def validate(config,
+             profile: str = "",
              long_term_suffix: str = "",
              short_term_suffix: str = "",
              assume_role: bool = False,
              keychain: bool = False,
              device: str = "",
              duration: int = 0,
-             force: bool = False,
-             config):
+             force: bool = False
+             ):
     """
     validate all the options
     """
@@ -341,7 +341,7 @@ def validate(profile: str = "",
                         assume_role,
                         short_term_suffix,
                         role_session_name,
-                        region_name,
+                        region,
                         config)
 
 
@@ -354,7 +354,7 @@ def get_credentials(short_term_name,
                     assume_role,
                     short_term_suffix,
                     role_session_name,
-                    region_name,
+                    region,
                     config):
     """
     Get credentials from AWS?

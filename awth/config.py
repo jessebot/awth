@@ -1,4 +1,4 @@
-from awsmfa.util import log_error_and_exit, prompter
+from awth.util import log_error_and_exit, prompter
 
 try:
     import configparser
