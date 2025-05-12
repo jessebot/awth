@@ -1,6 +1,11 @@
-aws-mfa: Easily manage your AWS Security Credentials when using Multi-Factor Authentication (MFA)
-=================================================================================================
+# Welcome to AWth
 
+## Why is AWth?
+
+AWth (pronounced Awe-th) is yet another CLI tool for authenticating to multiple AWS accounts using MFA. It's a fork/significant rewrite of [elastic/aws-mfa](https://github.com/elastic/aws-mfa) which is a fork of [broamski/aws-mfa](https://github.com/broamski/aws-mfa) which itself uses the boto4 library to authenticate to AWS.
+
+
+## original aws-mfa intro while we continue to update this code base
 **aws-mfa** makes it easy to manage your AWS SDK Security Credentials when Multi-Factor Authentication (MFA) is enforced on your AWS account. It automates the process of obtaining temporary credentials from the [AWS Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) and updating your [AWS Credentials](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) file (located at `~/.aws/credentials`). Traditional methods of managing MFA-based credentials requires users to write their own bespoke scripts/wrappers to fetch temporary credentials from STS and often times manually update their AWS credentials file.
 
 The concept behind **aws-mfa** is that there are 2 types of credentials:
@@ -13,21 +18,17 @@ The concept behind **aws-mfa** is that there are 2 types of credentials:
 If you haven't yet enabled multi-factor authentication for AWS API access, check out the [AWS article](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_configure-api-require.html) on doing so.
 
 
-Installation:
--------------
-Option 1
-```sh
-$ pip install aws-mfa
+# Installation
+
+I highly recommend you use [pipx] for installation:
+
+```bash
+pipx install awth
 ```
 
-Option 2
-```sh
-1. Clone this repo
-2. $ python setup.py install
-```
 
-Credentials File Setup
-----------------------
+# Credentials File Setup
+
 
 By default long term credentials are stored in system keychain (using [keyring library](https://pypi.org/project/keyring/)), only short term credentials are stored in `~/.aws/credentials`.
 It is possible to not use system keychain to store and retrieve long term credentials by running __aws-mfa__ with the `--no-keychain` command line flag. When using the `--no-keychain` flag, long term credentials are stored in and retrieved from `~/.aws/credentials` _(NOT RECOMMENDED)_.
@@ -156,7 +157,7 @@ Usage
                         To identify the long term credential section by
                         [<profile_name>-LONG_TERM_SUFFIX]. Use 'none' to
                         identify the long term credential section by
-                        [<profile_name>]. Omit to identify the long term 
+                        [<profile_name>]. Omit to identify the long term
                         credential section by [<profile_name>-long-term].
 --short-term-suffix SHORT_TERM_SUFFIX
                         To identify the short term credential section by
@@ -284,7 +285,7 @@ INFO - Your credentials have expired, renewing.
 Enter AWS MFA code for device [arn:aws:iam::111111111111:mfa/me] (renewing for 3600 seconds):123456
 INFO - Success! Your credentials will expire in 3600 seconds at: 2017-07-10 07:16:43+00:00
 
-$> aws-mfa —profile myorganization --assume-role arn:aws:iam::333333333333:role/Administrator --short-term-suffix staging --long-term-suffix none --role-session-name staging 
+$> aws-mfa —profile myorganization --assume-role arn:aws:iam::333333333333:role/Administrator --short-term-suffix staging --long-term-suffix none --role-session-name staging
 INFO - Validating credentials for profile: myorganization-staging with assumed role arn:aws:iam::333333333333:role/Administrator
 INFO - Your credentials have expired, renewing.
 Enter AWS MFA code for device [arn:aws:iam::111111111111:mfa/me] (renewing for 3600 seconds):123456
