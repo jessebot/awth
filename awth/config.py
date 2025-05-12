@@ -1,5 +1,4 @@
-import getpass
-import keyring
+from awsmfa.util import log_error_and_exit, prompter
 
 try:
     import configparser
@@ -8,7 +7,8 @@ except ImportError:
     import ConfigParser as configparser  # noqa
     from ConfigParser import NoOptionError, NoSectionError  # noqa
 
-from awsmfa.util import log_error_and_exit, prompter
+import getpass
+import keyring
 
 
 def initial_setup(logger, config, config_path, no_keychain=False):
@@ -18,11 +18,14 @@ def initial_setup(logger, config, config_path, no_keychain=False):
     if profile_name is None or profile_name == "":
         profile_name = "default"
 
-    profile_name = "{}-long-term".format(profile_name)
+    profile_name = f"{profile_name}-long-term"
     aws_access_key_id = getpass.getpass('aws_access_key_id: ')
+
     if aws_access_key_id is None or aws_access_key_id == "":
         log_error_and_exit(logger, "You must supply aws_access_key_id")
+
     aws_secret_access_key = getpass.getpass('aws_secret_access_key: ')
+
     if aws_secret_access_key is None or aws_secret_access_key == "":
         log_error_and_exit(logger, "You must supply aws_secret_access_key")
 
