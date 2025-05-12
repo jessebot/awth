@@ -2,7 +2,7 @@
 
 # all aws (apple with sauce)
 from awth.config import initial_setup
-from awth.util import log_error_and_exit, prompter
+from awth.util import log_error_and_exit
 import boto3
 from botocore.exceptions import ClientError, ParamValidationError
 
@@ -18,7 +18,9 @@ import datetime
 import getpass
 import keyring
 import logging
-from os import path, environ
+from os import path, environ, makedirs
+from pathlib import Path
+from rich.prompt import Confirm, Prompt
 import sys
 
 logger = logging.getLogger('awth')
@@ -121,19 +123,20 @@ def main(device: str,
     setup_logger(level)
 
     if not path.isfile(AWS_CREDS_PATH):
-        console_input = prompter()
-        create = console_input(
-                f"Could not locate credentials file at {AWS_CREDS_PATH}, "
-                "would you like to create one? [y/n]"
+        create_credentials_file = Confirm.ask(
+                "Could not locate credentials file at "
+                f"[green]{AWS_CREDS_PATH}[/green]. Would you like to create one?"
                 )
 
-        if create.lower() == "y":
-            with open(AWS_CREDS_PATH, 'a'):
-                pass
-        else:
-            log_error_and_exit(logger,
-                               'Could not locate credentials file at '
-                               f'{AWS_CREDS_PATH}')
+        if create_credentials_file:
+            # try creating directory and file
+            try:
+              makedirs(path.expanduser("~/.aws"), exist_ok=True)
+              Path(AWS_CREDS_PATH).touch()
+            except Exception as e:
+                log_error_and_exit(logger,
+                                   f'{e}. Could not locate credentials file at '
+                                   f'{AWS_CREDS_PATH}')
 
     config = get_config(AWS_CREDS_PATH)
 
@@ -141,7 +144,15 @@ def main(device: str,
         initial_setup(logger, config, AWS_CREDS_PATH, keychain)
         return
 
-    validate(args, config)
+    validate(config,
+             profile,
+             long_term_suffix,
+             short_term_suffix,
+             assume_role,
+             keychain,
+             device,
+             duration,
+             force)
 
 
 def get_config(aws_creds_path: str = ""):
@@ -364,9 +375,8 @@ def get_credentials(short_term_name,
         logger.debug("Received token as argument")
         mfa_token = str(token)
     else:
-        console_input = prompter()
-        mfa_token = console_input(f'Enter AWS MFA code for device [{device}] '
-                                  f'(renewing for {duration} seconds):')
+        mfa_token = Prompt(f'Enter AWS MFA code for device [{device}] '
+                           f'(renewing for {duration} seconds):')
 
     client = boto3.client(
         'sts',

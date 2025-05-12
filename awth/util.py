@@ -7,12 +7,3 @@ def log_error_and_exit(logger, message):
     """
     logger.error(message)
     sys.exit(1)
-
-
-def prompter():
-    try:
-        console_input = raw_input
-    except NameError:
-        console_input = input
-
-    return console_input

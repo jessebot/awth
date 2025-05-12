@@ -1,4 +1,6 @@
-from awth.util import log_error_and_exit, prompter
+from awth.util import log_error_and_exit
+
+from rich.prompt import Prompt
 
 try:
     import configparser
@@ -12,9 +14,7 @@ import keyring
 
 
 def initial_setup(logger, config, config_path, no_keychain=False):
-    console_input = prompter()
-
-    profile_name = console_input('Profile name to [%s]: ' % ("default"))
+    profile_name = Prompt('Profile name to [default]: ')
     if profile_name is None or profile_name == "":
         profile_name = "default"
 
