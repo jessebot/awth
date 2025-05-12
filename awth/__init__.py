@@ -7,7 +7,7 @@ import boto3
 from botocore.exceptions import ClientError, ParamValidationError
 
 # import bw
-import click
+from click import option, command, Choice
 try:
     import configparser
     from configparser import NoOptionError, NoSectionError
@@ -21,89 +21,123 @@ import logging
 from os import path, environ, makedirs
 from pathlib import Path
 from rich.prompt import Confirm, Prompt
+from rich.logging import RichHandler
+from .help_text import RichCommand, options_help
 import sys
 
-logger = logging.getLogger('awth')
 AWS_CREDS_PATH = path.expanduser(environ.get('AWS_SHARED_CREDENTIALS_FILE', '~/.aws/credentials'))
+HELP = options_help()
+LOG_LEVEL = 'warn'
+LOG_FILE = None
 
 
-def setup_logger(level=logging.DEBUG):
+def setup_logger(level="", log_file=""):
     """
-    set up basic logger
+    Sets up rich logger and stores the values for it in a db for future import
+    in other files. Returns logging.getLogger("rich")
     """
-    stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    stdout_handler.setFormatter(
-        logging.Formatter('%(levelname)s - %(message)s'))
-    stdout_handler.setLevel(level)
-    logger.addHandler(stdout_handler)
-    logger.setLevel(level)
+    # determine logging level
+    if not level:
+        level = LOG_LEVEL
+
+    log_level = getattr(logging, level.upper(), None)
+
+    # these are params to be passed into logging.basicConfig
+    opts = {'level': log_level, 'format': "%(message)s", 'datefmt': "[%X]"}
+
+    # we only log to a file if one was passed into config.yml or the cli
+    if not log_file:
+        log_file = LOG_FILE
+
+    # rich typically handles much of this but we don't use rich with files
+    if log_file:
+        opts['filename'] = log_file
+        opts['format'] = "%(asctime)s %(levelname)s %(funcName)s: %(message)s"
+    else:
+        rich_handler_opts = {'rich_tracebacks': True}
+        # 10 is the DEBUG logging level int value
+        if log_level == 10:
+            # log the name of the function if we're in debug mode :)
+            opts['format'] = "[bold]%(funcName)s()[/bold]: %(message)s"
+            rich_handler_opts['markup'] = True
+
+        opts['handlers'] = [RichHandler(**rich_handler_opts)]
+
+    # this uses the opts dictionary as parameters to logging.basicConfig()
+    logging.basicConfig(**opts)
+
+    if log_file:
+        return None
+    else:
+        return logging.getLogger("rich")
 
 
-@click.command()
-@click.option('--device',
-              required=False,
-              metavar='arn:aws:iam::123456788990:mfa/dudeman',
-              help="The MFA Device ARN. This value can also be "
-              "provided via the environment variable 'MFA_DEVICE' or"
-              " the ~/.aws/credentials variable 'aws_mfa_device'.")
-@click.option('--duration',
-              type=int,
-              help="The duration, in seconds, that the temporary "
-                   "credentials should remain valid. Minimum value: "
-                   "900 (15 minutes). Maximum: 129600 (36 hours). "
-                   "Defaults to 43200 (12 hours), or 3600 (one "
-                   "hour) when using '--assume-role'. This value "
-                   "can also be provided via the environment "
-                   "variable 'MFA_STS_DURATION'. ")
-@click.option('--profile',
-              help="If using profiles, specify the name here. The "
-              "default profile name is 'default'. The value can "
-              "also be provided via the environment variable "
-              "'AWS_PROFILE'.",
-              required=False)
-@click.option('--long-term-suffix', '--long-suffix',
-              help="The suffix appended to the profile name to"
-              "identify the long term credential section",
-              required=False)
-@click.option('--short-term-suffix', '--short-suffix',
-              help="The suffix appended to the profile name to"
-              "identify the short term credential section",
-              required=False)
-@click.option('--assume-role', '--assume',
-              metavar='arn:aws:iam::123456788990:role/RoleName',
-              help="The ARN of the AWS IAM Role you would like to "
-              "assume, if specified. This value can also be provided"
-              " via the environment variable 'MFA_ASSUME_ROLE'",
-              required=False)
-@click.option('--role-session-name',
-              help="Friendly session name required when using "
-              "--assume-role",
-              default=getpass.getuser(),
-              required=False)
-@click.option('--force',
-              help="Refresh credentials even if currently valid.",
-              required=False)
-@click.option('--log-level',
-              type=click.Choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'], case_sensitive=False),
-              help="Set log level",
-              required=False,
-              default='DEBUG')
-@click.option('--setup',
-              help="Setup a new log term credentials section",
-              is_flag=bool,
-              required=False)
-@click.option('--token',
-              help="Provide MFA token as an argument",
-              required=False,
-              default=None)
-@click.option('--region',
-              help="AWS STS Region",
-              required=False,
-              type=str)
-@click.option('--keychain',
-              is_flag=bool,
-              help="Use system keychain to store or retrieve long term credentials",
-              required=False)
+@command(cls=RichCommand)
+@option('--device',
+        required=False,
+        metavar='arn:aws:iam::123456788990:mfa/dudeman',
+        help="The MFA Device ARN. This value can also be "
+        "provided via the environment variable 'MFA_DEVICE' or"
+        " the ~/.aws/credentials variable 'aws_mfa_device'.")
+@option('--duration',
+        type=int,
+        help="The duration, in seconds, that the temporary "
+             "credentials should remain valid. Minimum value: "
+             "900 (15 minutes). Maximum: 129600 (36 hours). "
+             "Defaults to 43200 (12 hours), or 3600 (one "
+             "hour) when using '--assume-role'. This value "
+             "can also be provided via the environment "
+             "variable 'MFA_STS_DURATION'. ")
+@option('--profile',
+        help="If using profiles, specify the name here. The "
+        "default profile name is 'default'. The value can "
+        "also be provided via the environment variable "
+        "'AWS_PROFILE'.",
+        required=False)
+@option('--long-term-suffix', '--long-suffix',
+        help="The suffix appended to the profile name to"
+        "identify the long term credential section",
+        required=False)
+@option('--short-term-suffix', '--short-suffix',
+        help="The suffix appended to the profile name to"
+        "identify the short term credential section",
+        required=False)
+@option('--assume-role', '--assume',
+        metavar='arn:aws:iam::123456788990:role/RoleName',
+        help="The ARN of the AWS IAM Role you would like to "
+        "assume, if specified. This value can also be provided"
+        " via the environment variable 'MFA_ASSUME_ROLE'",
+        required=False)
+@option('--role-session-name',
+        help="Friendly session name required when using "
+        "--assume-role",
+        default=getpass.getuser(),
+        required=False)
+@option('--force',
+        help="Refresh credentials even if currently valid.",
+        required=False)
+@option('--log_level',
+        type=Choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'],
+                    case_sensitive=False),
+        help="Set log level",
+        required=False,
+        default='DEBUG')
+@option('--setup',
+        help="Setup a new log term credentials section",
+        is_flag=bool,
+        required=False)
+@option('--token',
+        help="Provide MFA token as an argument",
+        required=False,
+        default=None)
+@option('--region',
+        help="AWS STS Region",
+        required=False,
+        type=str)
+@option('--keychain',
+        is_flag=bool,
+        help="Use system keychain to store or retrieve long term credentials",
+        required=False)
 def main(device: str,
          duration: int,
          profile: str,
@@ -111,16 +145,15 @@ def main(device: str,
          short_term_suffix: str,
          assume_role: str,
          role_session_name: str,
-         force: bool,
-         log_level: str,
-         setup: bool,
+         force: bool = False,
+         log_level: str = "INFO",
+         setup: bool = False,
          token: str = "",
          region: str = "eu-central-1",
          keychain: bool = False):
 
     # set up logging before we begin
-    level = getattr(logging, log_level)
-    setup_logger(level)
+    logger = setup_logger(log_level)
 
     if not path.isfile(AWS_CREDS_PATH):
         create_credentials_file = Confirm.ask(
@@ -145,6 +178,7 @@ def main(device: str,
         return
 
     validate(config,
+             logger,
              profile,
              long_term_suffix,
              short_term_suffix,
@@ -155,7 +189,7 @@ def main(device: str,
              force)
 
 
-def get_config(aws_creds_path: str = ""):
+def get_config(logger, aws_creds_path: str = ""):
     """
     get the configuration and parse it
     """
@@ -172,6 +206,7 @@ def get_config(aws_creds_path: str = ""):
 
 
 def validate(config,
+             logger,
              profile: str = "",
              long_term_suffix: str = "",
              short_term_suffix: str = "",

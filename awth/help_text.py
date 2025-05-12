@@ -2,7 +2,9 @@
 help text functions for the onboardme cli
 """
 # file for rich printing
+import awth
 import click
+from importlib.metadata import version as get_version
 from rich.console import Console
 from rich.highlighter import RegexHighlighter
 from rich.panel import Panel
@@ -11,8 +13,7 @@ from rich.text import Text
 from rich.theme import Theme
 
 # custom local module
-from .constants import (VERSION)
-
+VERSION = get_version("awth")
 
 # this is for creating new help text svgs for the READMEs
 RECORD = False
@@ -89,20 +90,20 @@ class RichCommand(click.Command):
 
         highlighter = OptionHighlighter()
 
-        console = Console(theme=Theme({"option": "cornflower_blue",
-                                       "switch": "deep_sky_blue1",
-                                       "meta": "light_steel_blue",
+        console = Console(theme=Theme({"option": "green",
+                                       "switch": "magenta",
+                                       "meta": "blue",
                                        "unstable": "italic cyan"}),
                           highlighter=highlighter, record=RECORD)
 
-        title = "☁️  [cornflower_blue]awth[/] 🗝️\n"
+        title = "🌤️ [green]awth[/] 🗝️\n"
         desc = (
             "[steel_blue]Authenticate to AWS using MFA.")
 
         console.print(title + desc, justify="center")
 
-        console.print("\n[b]Usage[/]:  [royal_blue1]awth[/] " +
-                      "[cornflower_blue][OPTIONS]\n")
+        console.print("\n[b]Usage[/]:  [magenta]awth[/] " +
+                      "[green][OPTIONS]\n")
 
         options_table = Table(highlight=True, box=None, show_header=False,
                               row_styles=["", "dim"],
