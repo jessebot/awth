@@ -257,6 +257,7 @@ def validate(config,
     reup_message = "Obtaining credentials for a new role or profile."
 
     try:
+        # if using the system keychain to store password
         if keychain:
             key_id = keyring.get_password('aws:access_key_id', long_term_name)
             access_key = keyring.get_password('aws:secret_access_key', long_term_name)
@@ -378,7 +379,9 @@ def validate(config,
                 f" they will expire at {exp}")
 
     if should_refresh:
-        get_credentials(short_term_name,
+        get_credentials(logger,
+                        config,
+                        short_term_name,
                         key_id,
                         access_key,
                         token,
@@ -387,11 +390,12 @@ def validate(config,
                         assume_role,
                         short_term_suffix,
                         role_session_name,
-                        region,
-                        config)
+                        region)
 
 
-def get_credentials(short_term_name,
+def get_credentials(logger,
+                    config,
+                    short_term_name,
                     lt_key_id,
                     lt_access_key,
                     token,
@@ -399,9 +403,8 @@ def get_credentials(short_term_name,
                     duration,
                     assume_role,
                     short_term_suffix,
-                    role_session_name,
-                    region,
-                    config):
+                    role_session_name: str = "",
+                    region: str = ""):
     """
     Get credentials from AWS?
     """
@@ -410,8 +413,9 @@ def get_credentials(short_term_name,
         logger.debug("Received token as argument")
         mfa_token = str(token)
     else:
-        mfa_token = Prompt(f'Enter AWS MFA code for device [{device}] '
-                           f'(renewing for {duration} seconds):')
+        mfa_token = Prompt.ask(
+                f'Enter AWS MFA code for device [{device}] (renewing for {duration} seconds):'
+                )
 
     client = boto3.client(
         'sts',
@@ -423,7 +427,7 @@ def get_credentials(short_term_name,
 
         logger.info("Assuming Role - Profile: %s, Role: %s, Duration: %s",
                     short_term_name, assume_role, duration)
-        if role_session_name is None:
+        if not role_session_name:
             log_error_and_exit(logger, "You must specify a role session name "
                                "via --role-session-name")
 
