@@ -1,10 +1,12 @@
 # Welcome to AWth
 
-AWth (pronounced Awe-th) is yet another CLI tool for authenticating to multiple AWS accounts using MFA. 
+AWth (pronounced Awe-th) is yet another CLI tool for authenticating to multiple AWS accounts using MFA.
+
+🚧 We're still making heavy modifications here, so things may be broken 🚧
 
 ## Why is AWth?
 
-It's a fork/significant rewrite of [elastic/aws-mfa](https://github.com/elastic/aws-mfa) which is a fork of [broamski/aws-mfa](https://github.com/broamski/aws-mfa) which itself uses the boto4 library to authenticate to AWS.
+It's a fork/significant rewrite of [elastic/aws-mfa](https://github.com/elastic/aws-mfa) which is a fork of [broamski/aws-mfa](https://github.com/broamski/aws-mfa) which itself uses the boto4 library to authenticate to AWS. @cloudymax and @jessebot are giving it a massive face lift to use modern python libraries such as rich and click, but also to use modern packaging such as poetry. In addition to that, we've grabbed some required fixes to make this work with the latest version of boto, and we're committed to making this work well in modern environments. The original aws-mfa was great, but it's been almost a decade and this was needed.
 
 
 ## original aws-mfa intro while we continue to update this code base
