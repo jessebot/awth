@@ -1,5 +1,5 @@
 # Welcome to AWth
-<a href="https://github.com/small-hack/awth/releases"><img src="https://img.shields.io/github/v/release/small-hack/awth?style=plastic&labelColor=blue&color=green&logo=GitHub&logoColor=white"></a> [![](https://img.shields.io/docker/pulls/small-hack/awth.svg)](https://cloud.docker.com/u/small-hack/repository/docker/small-hack/awth)
+<a href="https://github.com/small-hack/awth/releases"><img src="https://img.shields.io/github/v/release/small-hack/awth?style=plastic&labelColor=blue&color=green&logo=GitHub&logoColor=white"></a>
 
 AWth (pronounced Awe-th) is yet another CLI tool for authenticating to multiple AWS accounts using MFA.
 
