@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "awth"
-version = "0.1.0a3"
+version = "0.1.0a4"
 description = "awth your way into aws, again, with mfa"
 authors = [
 	"jessebot <jessebot@linux.com>",

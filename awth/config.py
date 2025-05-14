@@ -30,15 +30,21 @@ def initial_setup(logger,
 
     aws_secret_access_key = getpass.getpass('aws_secret_access_key: ')
 
-    if aws_secret_access_key is None or aws_secret_access_key == "":
+    while not aws_secret_access_key:
         log_error_and_exit(logger, "You must supply aws_secret_access_key")
+        aws_secret_access_key = getpass.getpass('aws_secret_access_key: ')
+
+    aws_mfa_device = getpass.getpass('AWS MFA device ARN: ')
 
     if keychain:
         keyring.set_password("aws:access_key_id", profile_name, aws_access_key_id)
         keyring.set_password("aws:secret_access_key", profile_name, aws_secret_access_key)
+        keyring.set_password("aws:mfa_device", profile_name, aws_mfa_device)
     else:
+        # add section with name they gave us plus "-long-term"
         config.add_section(profile_name)
         config.set(profile_name, 'aws_access_key_id', aws_access_key_id)
         config.set(profile_name, 'aws_secret_access_key', aws_secret_access_key)
+        config.set(profile_name, 'aws_mfa_device', aws_mfa_device)
         with open(config_path, 'w') as configfile:
             config.write(configfile)

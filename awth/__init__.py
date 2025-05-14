@@ -166,6 +166,7 @@ def main(device: str,
             try:
               makedirs(path.expanduser("~/.aws"), exist_ok=True)
               Path(AWS_CREDS_PATH).touch()
+              setup = True
             except Exception as e:
                 log_error_and_exit(logger,
                                    f'{e}. Could not locate credentials file at '
