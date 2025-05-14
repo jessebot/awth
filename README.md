@@ -11,17 +11,18 @@ It's a fork/significant rewrite of [elastic/aws-mfa](https://github.com/elastic/
 
 ### TODOs since fork
 
-- [x] add support for keychain (covers default OS keychain tool and keypass)
+- [x] add support for keychain not always being on (covers default OS keychain tool and keypass when it is on)
 - [ ] add support for long term credentials from bitwarden
+  - [ ] add support for MFA Token from bitwarden
 - [ ] add support for long term credentials from 1password
+  - [ ] add support for MFA Token from 1password
 - [ ] test assuming roles
-- [ ] test sourcing this library
-- [ ] revise docs
+- [ ] test sourcing this as a library rather than using the CLI
+- [ ] revise docs (still need to do a full pass on it since fork
 - [ ] support AWS_KEYCHAIN=true env var to always use keychain
 - [x] add prettier logging and help text
 - [x] setup both your ~/.aws/credentials file and your ~/.aws/config file
   - [ ] setup setting json as default output
-
 
 ## original aws-mfa intro while we continue to update this code base
 **aws-mfa** makes it easy to manage your AWS SDK Security Credentials when Multi-Factor Authentication (MFA) is enforced on your AWS account. It automates the process of obtaining temporary credentials from the [AWS Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) and updating your [AWS Credentials](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) file (located at `~/.aws/credentials`). Traditional methods of managing MFA-based credentials requires users to write their own bespoke scripts/wrappers to fetch temporary credentials from STS and often times manually update their AWS credentials file.
