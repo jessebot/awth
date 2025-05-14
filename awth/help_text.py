@@ -5,6 +5,7 @@ help text functions for the onboardme cli
 import awth
 import click
 from importlib.metadata import version as get_version
+from os import environ
 from rich.console import Console
 from rich.highlighter import RegexHighlighter
 from rich.panel import Panel
@@ -16,7 +17,7 @@ from rich.theme import Theme
 VERSION = get_version("awth")
 
 # this is for creating new help text svgs for the READMEs
-RECORD = False
+RECORD = environ.get("AWTH_SCREENSHOT", False)
 
 
 def pretty_choices(default_list: list) -> str:

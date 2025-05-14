@@ -168,42 +168,29 @@ aws_security_token = <POPULATED_BY_awth>
 Usage
 -----
 
+pretty usage:
+<img src="./screenshots/awth.svg">
+
+
+screenreader friendly usage:
 ```
---device arn:aws:iam::123456788990:mfa/mirandel-smith
-                        The MFA Device ARN. This value can also be provided
-                        via the environment variable 'MFA_DEVICE' or the
-                        ~/.aws/credentials variable 'aws_mfa_device'.
---duration DURATION     The duration, in seconds, that the temporary
-                        credentials should remain valid. Minimum value: 900
-                        (15 minutes). Maximum: 129600 (36 hours). Defaults to
-                        43200 (12 hours), or 3600 (one hour) when using
-                        '--assume-role'. This value can also be provided via
-                        the environment variable 'MFA_STS_DURATION'.
---profile PROFILE       If using profiles, specify the name here. The default
-                        profile name is 'default'. The value can also be
-                        provided via the environment variable 'AWS_PROFILE'.
---long-term-suffix LONG_TERM_SUFFIX
-                        To identify the long term credential section by
-                        [<profile_name>-LONG_TERM_SUFFIX]. Use 'none' to
-                        identify the long term credential section by
-                        [<profile_name>]. Omit to identify the long term
-                        credential section by [<profile_name>-long-term].
---short-term-suffix SHORT_TERM_SUFFIX
-                        To identify the short term credential section by
-                        [<profile_name>-SHORT_TERM_SUFFIX]. Omit or use 'none'
-                        to identify the short term credential section by
-                        [<profile_name>].
---assume-role arn:aws:iam::123456788990:role/RoleName
-                        The ARN of the AWS IAM Role you would like to assume,
-                        if specified. This value can also be provided via the
-                        environment variable 'MFA_ASSUME_ROLE'
---role-session-name ROLE_SESSION_NAME
-                        Friendly session name required when using --assume-
-                        role. By default, this is your local username.
---token TOKEN, --mfa-token TOKEN
-                        Provide MFA token as an argument
---no-keychain           Do not use system keychain to store or retrieve long
-                        term credentials
+--device arn:aws:iam::123456788990:mfa/mirandel-smith The MFA Device ARN. This value can also be provided via the environment variable 'MFA_DEVICE' or the ~/.aws/credentials variable 'aws_mfa_device'.
+
+--duration DURATION     The duration, in seconds, that the temporary credentials should remain valid. Minimum value: 900 (15 minutes). Maximum: 129600 (36 hours). Defaults to 43200 (12 hours), or 3600 (one hour) when using '--assume-role'. This value can also be provided via the environment variable 'MFA_STS_DURATION'.
+
+--profile PROFILE       If using profiles, specify the name here. The default profile name is 'default'. The value can also be provided via the environment variable 'AWS_PROFILE'.
+
+--long-term-suffix LONG_TERM_SUFFIX To identify the long term credential section by [<profile_name>-LONG_TERM_SUFFIX]. Use 'none' to identify the long term credential section by [<profile_name>]. Omit to identify the long term credential section by [<profile_name>-long-term].
+
+--short-term-suffix SHORT_TERM_SUFFIX To identify the short term credential section by [<profile_name>-SHORT_TERM_SUFFIX]. Omit or use 'none' to identify the short term credential section by [<profile_name>].
+
+--assume-role arn:aws:iam::123456788990:role/RoleName The ARN of the AWS IAM Role you would like to assume, if specified. This value can also be provided via the environment variable 'MFA_ASSUME_ROLE'
+
+--role-session-name ROLE_SESSION_NAME Friendly session name required when using --assume- role. By default, this is your local username.
+
+--token TOKEN, --mfa-token TOKEN Provide MFA token as an argument
+
+--no-keychain           Do not use system keychain to store or retrieve long term credentials
 ```
 
 **Argument precedence**: Command line arguments take precedence over environment variables.
