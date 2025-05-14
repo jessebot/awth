@@ -144,7 +144,7 @@ Usage
 -----
 
 ```
---device arn:aws:iam::123456788990:mfa/dudeman
+--device arn:aws:iam::123456788990:mfa/mirandel-smith
                         The MFA Device ARN. This value can also be provided
                         via the environment variable 'MFA_DEVICE' or the
                         ~/.aws/credentials variable 'aws_mfa_device'.
@@ -192,31 +192,31 @@ Run **aws-mfa** *before* running any of your scripts that use any AWS SDK.
 Using command line arguments:
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/dudeman
+$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith
 INFO - Using profile: default
 INFO - Your credentials have expired, renewing.
-Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/dudeman] (renewing for 1800 seconds):123456
+Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:07:09+00:00
 ```
 
 Using environment variables:
 
 ```sh
-export MFA_DEVICE=arn:aws:iam::123456788990:mfa/dudeman
+export MFA_DEVICE=arn:aws:iam::123456788990:mfa/mirandel-smith
 $> aws-mfa --duration 1800
 INFO - Using profile: default
 INFO - Your credentials have expired, renewing.
-Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/dudeman] (renewing for 1800 seconds):123456
+Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:07:09+00:00
 ```
 
 ```sh
-export MFA_DEVICE=arn:aws:iam::123456788990:mfa/dudeman
+export MFA_DEVICE=arn:aws:iam::123456788990:mfa/mirandel-smith
 export MFA_STS_DURATION=1800
 $> aws-mfa
 INFO - Using profile: default
 INFO - Your credentials have expired, renewing.
-Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/dudeman] (renewing for 1800 seconds):123456
+Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:07:09+00:00
 ```
 
@@ -231,9 +231,9 @@ INFO - Your credentials are still valid for 1541.791134 seconds they will expire
 Using a profile: (profiles allow you to reference different sets of credentials, perhaps for different users or different regions)
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/dudeman --profile development
+$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --profile development
 INFO - Using profile: development
-Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/dudeman] (renewing for 1800 seconds):666666
+Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):666666
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:09:04+00:00
 ```
 
@@ -241,19 +241,19 @@ Using a profile that is set via the environment variable `AWS_PROFILE`:
 
 ```sh
 $> export AWS_PROFILE=development
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/dudeman
+$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith
 INFO - Using profile: development
-Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/dudeman] (renewing for 1800 seconds):666666
+Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):666666
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:09:04+00:00
 ```
 
 Assuming a role:
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/dudeman --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
+$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
 INFO - Validating credentials for profile: default  with assumed role arn:aws:iam::123456788990:role/some-role
 INFO - Obtaining credentials for a new role or profile.
-Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/dudeman] (renewing for 1800 seconds):123456
+Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
 INFO - Success! Your credentials will expire in 1800 seconds at: 2016-10-24 18:58:17+00:00
 ```
 
@@ -267,16 +267,16 @@ assume_role =  arn:aws:iam::123456788990:role/some-role
 ```
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/dudeman --role-session-name some-role-session
+$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --role-session-name some-role-session
 ```
 
 Assuming a role using a profile:
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/dudeman --profile development --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
+$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --profile development --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
 INFO - Validating credentials for profile: development with assumed role arn:aws:iam::123456788990:role/some-role
 INFO - Obtaining credentials for a new role or profile.
-Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/dudeman] (renewing for 1800 seconds):123456
+Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
 INFO - Success! Your credentials will expire in 1800 seconds at: 2016-10-24 18:58:17+00:00
 ```
 

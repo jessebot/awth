@@ -1,7 +1,8 @@
 import sys
+import logging
 
 
-def log_error_and_exit(logger, message):
+def log_error_and_exit(logger: logging.Logger, message: str):
     """
     Log an error message and exit with error
     """
