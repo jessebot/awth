@@ -267,7 +267,7 @@ def validate(config,
             access_key = config.get(long_term_name, 'aws_secret_access_key')
     except NoSectionError:
         log_error_and_exit(logger,
-                           f"Long term credentials session '[{long_term_name}]' is missing. "
+                           f"Long term credentials session '{long_term_name}' is missing. "
                            "You must add this section to your credentials file "
                            "along with your long term 'aws_access_key_id' and "
                            "'aws_secret_access_key'")
@@ -415,7 +415,7 @@ def get_credentials(logger,
         mfa_token = str(token)
     else:
         mfa_token = Prompt.ask(
-                f'Enter AWS MFA code for device [{device}] (renewing for {duration} seconds):'
+                f'Enter AWS MFA code for device {device} (renewing for {duration} seconds):'
                 )
 
     client = boto3.client(
