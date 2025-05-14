@@ -12,6 +12,10 @@ It's a fork/significant rewrite of [elastic/aws-mfa](https://github.com/elastic/
 ### TODOs since fork
 
 - [x] add support for keychain not always being on (covers default OS keychain tool and keypass when it is on)
+- [x] use click instead of argparse
+  - [x] add prettier logging and help text
+- [x] add support for specifying a region
+- [ ] remove deprecated boto support (we now will only support boto3)
 - [ ] add support for long term credentials from bitwarden
   - [ ] add support for MFA Token from bitwarden
 - [ ] add support for long term credentials from 1password
@@ -19,9 +23,9 @@ It's a fork/significant rewrite of [elastic/aws-mfa](https://github.com/elastic/
 - [ ] test assuming roles
 - [ ] test sourcing this as a library rather than using the CLI
 - [ ] revise docs (still need to do a full pass on it since fork
-- [ ] support AWS_KEYCHAIN=true env var to always use keychain
-- [x] add prettier logging and help text
-- [x] setup both your ~/.aws/credentials file and your ~/.aws/config file
+- [ ] support `$AWS_KEYCHAIN=true` env var to always use keychain
+
+- [x] setup both your `~/.aws/credentials` file and your `~/.aws/config` file
   - [ ] setup setting json as default output
 
 ## original aws-mfa intro while we continue to update this code base
