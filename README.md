@@ -1,18 +1,32 @@
 # Welcome to AWth
+<a href="https://github.com/small-hack/awth/releases"><img src="https://img.shields.io/github/v/release/small-hack/awth?style=plastic&labelColor=blue&color=green&logo=GitHub&logoColor=white"></a> [![](https://img.shields.io/docker/pulls/small-hack/awth.svg)](https://cloud.docker.com/u/small-hack/repository/docker/small-hack/awth)
 
 AWth (pronounced Awe-th) is yet another CLI tool for authenticating to multiple AWS accounts using MFA.
 
-🚧 We're still making heavy modifications here, so things may be broken 🚧
+🚧 We're still making heavy modifications here, so things may be broken (we haven't tested assuming roles yet) 🚧
 
 ## Why is AWth?
 
 It's a fork/significant rewrite of [elastic/aws-mfa](https://github.com/elastic/aws-mfa) which is a fork of [broamski/aws-mfa](https://github.com/broamski/aws-mfa) which itself uses the boto4 library to authenticate to AWS. @cloudymax and @jessebot are giving it a massive face lift to use modern python libraries such as rich and click, but also to use modern packaging such as poetry. In addition to that, we've grabbed some required fixes to make this work with the latest version of boto, and we're committed to making this work well in modern environments. The original aws-mfa was great, but it's been almost a decade and this was needed.
 
+### TODOs since fork
+
+[x] add support for keychain (covers default OS keychain tool and keypass)
+[ ] add support for long term credentials from bitwarden
+[ ] add support for long term credentials from 1password
+[ ] test assuming roles
+[ ] test sourcing this library
+[ ] revise docs
+[ ] support AWS_KEYCHAIN=true env var to always use keychain
+[x] add prettier logging and help text
+[x] setup both your ~/.aws/credentials file and your ~/.aws/config file
+  [ ] setup setting json as default output
+
 
 ## original aws-mfa intro while we continue to update this code base
 **aws-mfa** makes it easy to manage your AWS SDK Security Credentials when Multi-Factor Authentication (MFA) is enforced on your AWS account. It automates the process of obtaining temporary credentials from the [AWS Security Token Service](http://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html) and updating your [AWS Credentials](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) file (located at `~/.aws/credentials`). Traditional methods of managing MFA-based credentials requires users to write their own bespoke scripts/wrappers to fetch temporary credentials from STS and often times manually update their AWS credentials file.
 
-The concept behind **aws-mfa** is that there are 2 types of credentials:
+The concept behind `awth` is that there are 2 types of credentials:
 
 * `long-term` - Your typcial AWS access keys, consisting of an `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 
@@ -24,22 +38,28 @@ If you haven't yet enabled multi-factor authentication for AWS API access, check
 
 # Installation
 
-I highly recommend you use [pipx] for installation:
+I highly recommend you use [pipx](https://github.com/pypa/pipx?tab=readme-ov-file#install-pipx) for installation:
 
 ```bash
 pipx install awth
 ```
 
+You could also use pip directly though:
+
+```bash
+pip install awth
+```
 
 # Credentials File Setup
 
+By default long term credentials are stored long term credentials are stored in and retrieved from `~/.aws/credentials`.
 
-By default long term credentials are stored in system keychain (using [keyring library](https://pypi.org/project/keyring/)), only short term credentials are stored in `~/.aws/credentials`.
-It is possible to not use system keychain to store and retrieve long term credentials by running __aws-mfa__ with the `--no-keychain` command line flag. When using the `--no-keychain` flag, long term credentials are stored in and retrieved from `~/.aws/credentials` _(NOT RECOMMENDED)_.
+It is possible to use system keychain to store and retrieve long term credentials by in system keychain (using [keyring library](https://pypi.org/project/keyring/)), so only short term credentials are stored in `~/.aws/credentials`. To use this option pass in `--keychain`. (Coming soon: set $AWS_KEYCHAIN=true to always use the keychain)
+
 
 In a typical AWS credentials file credentials are stored in sections, denoted by a pair of brackets: `[]`. The `[default]` section stores your default credentials. You can store multiple sets of credentials using different profile names. If no profile is specified, the `[default]` section is always used.
 
-Long term credential sections are identified by the convention `[<profile_name>-long-term]` and short term credentials are identified by the typical convention: `[<profile_name>]`. The following illustrates how you would configure you credentials file using **aws-mfa** with your default credentials:
+Long term credential sections are identified by the convention `[<profile_name>-long-term]` and short term credentials are identified by the typical convention: `[<profile_name>]`. The following illustrates how you would configure you credentials file using `awth` with your default credentials:
 
 ```ini
 [default-long-term]
@@ -47,7 +67,7 @@ aws_access_key_id = YOUR_LONGTERM_KEY_ID
 aws_secret_access_key = YOUR_LONGTERM_ACCESS_KEY
 ```
 
-After running `aws-mfa`, your credentials file would read:
+After running `awth`, your credentials file would read:
 
 ```ini
 [default-long-term]
@@ -56,9 +76,9 @@ aws_secret_access_key = YOUR_LONGTERM_ACCESS_KEY
 
 
 [default]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 ```
 
 Similarly, if you utilize a credentials profile named **development**, your credentials file would look like:
@@ -70,7 +90,7 @@ aws_secret_access_key = YOUR_LONGTERM_ACCESS_KEY
 ```
 
 
-After running `aws-mfa`, your credentials file would read:
+After running `awth`, your credentials file would read:
 
 ```ini
 [development-long-term]
@@ -78,9 +98,9 @@ aws_access_key_id = YOUR_LONGTERM_KEY_ID
 aws_secret_access_key = YOUR_LONGTERM_ACCESS_KEY
 
 [development]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 ```
 
 The default naming convention for the credential section can be overriden by using the `--long-term-suffix` and
@@ -88,7 +108,7 @@ The default naming convention for the credential section can be overriden by usi
 that manages the IAM users for your organization and have other AWS accounts for development, staging and production
 environments.
 
-After running `aws-mfa` once for each environment with a different value for `--short-term-suffix`, your credentials
+After running `awth` once for each environment with a different value for `--short-term-suffix`, your credentials
 file would read:
 
 ```ini
@@ -97,26 +117,26 @@ aws_access_key_id = YOUR_LONGTERM_KEY_ID
 aws_secret_access_key = YOUR_LONGTERM_ACCESS_KEY
 
 [myorganization-development]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 
 [myorganization-staging]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 
 [myorganization-production]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 ```
 
-This allows you to access multiple environments without the need to run `aws-mfa` each time you want to switch
+This allows you to access multiple environments without the need to run `awth` each time you want to switch
 environments.
 
 If you don't like the a long term suffix, you can omit it by passing the value `none` for the `--long-term-suffix`
-command line argument. After running ``aws-mfa`` once for each environment with a different value for
+command line argument. After running ``awth`` once for each environment with a different value for
 `--short-term-suffix`, your credentials file would read:
 
 ```ini
@@ -125,19 +145,19 @@ aws_access_key_id = YOUR_LONGTERM_KEY_ID
 aws_secret_access_key = YOUR_LONGTERM_ACCESS_KEY
 
 [myorganization-development]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 
 [myorganization-staging]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 
 [myorganization-production]
-aws_access_key_id = <POPULATED_BY_AWS-MFA>
-aws_secret_access_key = <POPULATED_BY_AWS-MFA>
-aws_security_token = <POPULATED_BY_AWS-MFA>
+aws_access_key_id = <POPULATED_BY_awth>
+aws_secret_access_key = <POPULATED_BY_awth>
+aws_security_token = <POPULATED_BY_awth>
 ```
 
 Usage
@@ -186,13 +206,13 @@ Usage
 Usage Example
 -------------
 
-Run **aws-mfa** *before* running any of your scripts that use any AWS SDK.
+Run `awth` *before* running any of your scripts that use any AWS SDK.
 
 
 Using command line arguments:
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith
+$> awth --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith
 INFO - Using profile: default
 INFO - Your credentials have expired, renewing.
 Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
@@ -203,7 +223,7 @@ Using environment variables:
 
 ```sh
 export MFA_DEVICE=arn:aws:iam::123456788990:mfa/mirandel-smith
-$> aws-mfa --duration 1800
+$> awth --duration 1800
 INFO - Using profile: default
 INFO - Your credentials have expired, renewing.
 Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
@@ -213,17 +233,17 @@ INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:0
 ```sh
 export MFA_DEVICE=arn:aws:iam::123456788990:mfa/mirandel-smith
 export MFA_STS_DURATION=1800
-$> aws-mfa
+$> awth
 INFO - Using profile: default
 INFO - Your credentials have expired, renewing.
 Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:07:09+00:00
 ```
 
-Output of running **aws-mfa** while credentials are still valid:
+Output of running `awth` while credentials are still valid:
 
 ```sh
-$> aws-mfa
+$> awth
 INFO - Using profile: default
 INFO - Your credentials are still valid for 1541.791134 seconds they will expire at 2015-12-21 23:07:09
 ```
@@ -231,7 +251,7 @@ INFO - Your credentials are still valid for 1541.791134 seconds they will expire
 Using a profile: (profiles allow you to reference different sets of credentials, perhaps for different users or different regions)
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --profile development
+$> awth --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --profile development
 INFO - Using profile: development
 Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):666666
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:09:04+00:00
@@ -241,7 +261,7 @@ Using a profile that is set via the environment variable `AWS_PROFILE`:
 
 ```sh
 $> export AWS_PROFILE=development
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith
+$> awth --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith
 INFO - Using profile: development
 Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):666666
 INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:09:04+00:00
@@ -250,7 +270,7 @@ INFO - Success! Your credentials will expire in 1800 seconds at: 2015-12-21 23:0
 Assuming a role:
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
+$> awth --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
 INFO - Validating credentials for profile: default  with assumed role arn:aws:iam::123456788990:role/some-role
 INFO - Obtaining credentials for a new role or profile.
 Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
@@ -267,13 +287,13 @@ assume_role =  arn:aws:iam::123456788990:role/some-role
 ```
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --role-session-name some-role-session
+$> awth --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --role-session-name some-role-session
 ```
 
 Assuming a role using a profile:
 
 ```sh
-$> aws-mfa --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --profile development --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
+$> awth --duration 1800 --device arn:aws:iam::123456788990:mfa/mirandel-smith --profile development --assume-role arn:aws:iam::123456788990:role/some-role --role-session-name some-role-session
 INFO - Validating credentials for profile: development with assumed role arn:aws:iam::123456788990:role/some-role
 INFO - Obtaining credentials for a new role or profile.
 Enter AWS MFA code for device [arn:aws:iam::123456788990:mfa/mirandel-smith] (renewing for 1800 seconds):123456
@@ -283,13 +303,13 @@ INFO - Success! Your credentials will expire in 1800 seconds at: 2016-10-24 18:5
 Assuming a role in multiple accounts and be able to work with both accounts simultaneously (i.e. production an staging):
 
 ```sh
-$> aws-mfa —profile myorganization --assume-role arn:aws:iam::222222222222:role/Administrator --short-term-suffix production --long-term-suffix none --role-session-name production
+$> awth —profile myorganization --assume-role arn:aws:iam::222222222222:role/Administrator --short-term-suffix production --long-term-suffix none --role-session-name production
 INFO - Validating credentials for profile: myorganization-production with assumed role arn:aws:iam::222222222222:role/Administrator
 INFO - Your credentials have expired, renewing.
 Enter AWS MFA code for device [arn:aws:iam::111111111111:mfa/me] (renewing for 3600 seconds):123456
 INFO - Success! Your credentials will expire in 3600 seconds at: 2017-07-10 07:16:43+00:00
 
-$> aws-mfa —profile myorganization --assume-role arn:aws:iam::333333333333:role/Administrator --short-term-suffix staging --long-term-suffix none --role-session-name staging
+$> awth —profile myorganization --assume-role arn:aws:iam::333333333333:role/Administrator --short-term-suffix staging --long-term-suffix none --role-session-name staging
 INFO - Validating credentials for profile: myorganization-staging with assumed role arn:aws:iam::333333333333:role/Administrator
 INFO - Your credentials have expired, renewing.
 Enter AWS MFA code for device [arn:aws:iam::111111111111:mfa/me] (renewing for 3600 seconds):123456
