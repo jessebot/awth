@@ -1,4 +1,5 @@
 from awth.util import log_error_and_exit
+import logging
 
 from rich.prompt import Prompt
 
@@ -12,13 +13,17 @@ except ImportError:
 import getpass
 import keyring
 
+from sys import exc_info
 
-def initial_setup(logger,
-                  config,
+
+def initial_setup(logger: logging.Logger,
+                  config: configparser.RawConfigParser,
                   config_path: str,
                   keychain: bool = False):
     """
     setup the credentials file
+
+    returns config object
     """
     profile_name = Prompt.ask('Profile name to', default="default")
     profile_name = f"{profile_name}-long-term"
@@ -48,3 +53,23 @@ def initial_setup(logger,
         config.set(profile_name, 'aws_mfa_device', aws_mfa_device)
         with open(config_path, 'w') as configfile:
             config.write(configfile)
+
+    return config
+
+
+def get_config(logger,
+               aws_creds_path: str = ""):
+    """
+    get the configuration and parse it
+    """
+    config = configparser.RawConfigParser()
+
+    try:
+        config.read(aws_creds_path)
+    except configparser.ParsingError:
+        e = exc_info()[1]
+        log_error_and_exit(logger,
+                           "There was a problem reading or parsing "
+                           f"your credentials file: {e.args[0]}")
+
+    return config

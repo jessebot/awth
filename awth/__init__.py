@@ -1,7 +1,7 @@
 # import 1password
 
 # all aws (apple with sauce)
-from awth.config import initial_setup
+from awth.config import initial_setup, get_config
 from awth.util import log_error_and_exit
 import boto3
 from botocore.exceptions import ClientError, ParamValidationError
@@ -29,6 +29,7 @@ AWS_CREDS_PATH = path.expanduser(environ.get('AWS_SHARED_CREDENTIALS_FILE', '~/.
 HELP = options_help()
 LOG_LEVEL = 'warn'
 LOG_FILE = None
+USER = getpass.getuser()
 
 
 def setup_logger(level="", log_file=""):
@@ -74,7 +75,6 @@ def setup_logger(level="", log_file=""):
 
 @command(cls=RichCommand)
 @option('--device',
-        required=False,
         metavar='arn:aws:iam::123456788990:mfa/dudeman',
         help="The MFA Device ARN. This value can also be "
         "provided via the environment variable 'MFA_DEVICE' or"
@@ -92,59 +92,48 @@ def setup_logger(level="", log_file=""):
         help="If using profiles, specify the name here. The "
         "default profile name is 'default'. The value can "
         "also be provided via the environment variable "
-        "'AWS_PROFILE'.",
-        required=False)
-@option('--long-term-suffix', '--long-suffix',
+        "'AWS_PROFILE'.")
+@option('--long-term-suffix', '--long-suffix', 'long_term_suffix',
         help="The suffix appended to the profile name to"
-        "identify the long term credential section",
-        required=False)
-@option('--short-term-suffix', '--short-suffix',
+        "identify the long term credential section")
+@option('--short-term-suffix', '--short-suffix', 'short_term_suffix',
         help="The suffix appended to the profile name to"
-        "identify the short term credential section",
-        required=False)
+        "identify the short term credential section")
 @option('--assume-role', '--assume',
         metavar='arn:aws:iam::123456788990:role/RoleName',
         help="The ARN of the AWS IAM Role you would like to "
         "assume, if specified. This value can also be provided"
-        " via the environment variable 'MFA_ASSUME_ROLE'",
-        required=False)
-@option('--role-session-name',
-        help="Friendly session name required when using "
-        "--assume-role",
-        default=getpass.getuser(),
-        required=False)
+        " via the environment variable 'MFA_ASSUME_ROLE'")
+@option('--role-session-name', "role_session_name",
+        help="Friendly session name required when using ",
+        default=USER)
 @option('--force',
-        help="Refresh credentials even if currently valid.",
-        required=False)
-@option('--log_level',
+        help="Refresh credentials even if currently valid.")
+@option('--log-level', 'log_level',
         type=Choice(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'],
                     case_sensitive=False),
         help="Set log level",
-        required=False,
         default='DEBUG')
 @option('--setup',
         help="Setup a new log term credentials section",
-        is_flag=bool,
-        required=False)
+        is_flag=bool)
 @option('--token',
         help="Provide MFA token as an argument",
-        required=False,
         default=None)
 @option('--region',
         help="AWS STS Region",
-        required=False,
+        default="eu-central-1",
         type=str)
 @option('--keychain',
         is_flag=bool,
-        help="Use system keychain to store or retrieve long term credentials",
-        required=False)
+        help="Use system keychain to store or retrieve long term credentials")
 def main(device: str,
          duration: int,
          profile: str,
          long_term_suffix: str,
          short_term_suffix: str,
          assume_role: str,
-         role_session_name: str,
+         role_session_name: str = USER,
          force: bool = False,
          log_level: str = "INFO",
          setup: bool = False,
@@ -190,27 +179,12 @@ def main(device: str,
              force)
 
 
-def get_config(logger, aws_creds_path: str = ""):
-    """
-    get the configuration and parse it
-    """
-    config = configparser.RawConfigParser()
-
-    try:
-        config.read(aws_creds_path)
-    except configparser.ParsingError:
-        e = sys.exc_info()[1]
-        log_error_and_exit(logger,
-                           "There was a problem reading or parsing "
-                           f"your credentials file: {e.args[0]}")
-    return config
-
-
-def validate(config,
-             logger,
+def validate(config: configparser.RawConfigParser,
+             logger: logging.Logger,
              profile: str = "",
              long_term_suffix: str = "",
              short_term_suffix: str = "",
+             role_session_name: str = "",
              assume_role: bool = False,
              keychain: bool = False,
              device: str = "",
@@ -260,11 +234,15 @@ def validate(config,
     try:
         # if using the system keychain to store password
         if keychain:
+            logger.info(f"Checking system keychain for AWS {long_term_name} credentials...")
             key_id = keyring.get_password('aws:access_key_id', long_term_name)
             access_key = keyring.get_password('aws:secret_access_key', long_term_name)
+            device = keyring.get_password('aws:mfa_device', long_term_name)
         else:
+            logger.info(f"Checking {AWS_CREDS_PATH} for AWS {long_term_name} credentials...")
             key_id = config.get(long_term_name, 'aws_access_key_id')
             access_key = config.get(long_term_name, 'aws_secret_access_key')
+            device = config.get(long_term_name, 'aws_mfa_device')
     except NoSectionError:
         log_error_and_exit(logger,
                            f"Long term credentials session '{long_term_name}' is missing. "
@@ -394,16 +372,16 @@ def validate(config,
                         region)
 
 
-def get_credentials(logger,
-                    config,
-                    short_term_name,
-                    lt_key_id,
-                    lt_access_key,
-                    token,
-                    device,
-                    duration,
-                    assume_role,
-                    short_term_suffix,
+def get_credentials(logger: logging.Logger,
+                    config: configparser.RawConfigParser,
+                    short_term_name: str,
+                    lt_key_id: str,
+                    lt_access_key: str,
+                    token: str,
+                    device: str,
+                    duration: int,
+                    assume_role: str,
+                    short_term_suffix: str,
                     role_session_name: str = "",
                     region: str = ""):
     """
