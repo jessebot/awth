@@ -68,60 +68,28 @@ def setup_logger(level="", log_file=""):
 
 
 @command(cls=RichCommand)
-@option('--device',
-        metavar='arn:aws:iam::123456788990:mfa/mirandel-smith',
-        help="The MFA Device ARN. This value can also be "
-        "provided via the environment variable 'MFA_DEVICE' or"
-        " the ~/.aws/credentials variable 'aws_mfa_device'.")
-@option('--duration',
-        type=int,
-        help="The duration, in seconds, that the temporary "
-             "credentials should remain valid. Minimum value: "
-             "900 (15 minutes). Maximum: 129600 (36 hours). "
-             "Defaults to 43200 (12 hours), or 3600 (one "
-             "hour) when using '--assume-role'. This value "
-             "can also be provided via the environment "
-             "variable 'MFA_STS_DURATION'. ")
-@option('--profile',
-        help="If using profiles, specify the name here. The "
-        "default profile name is 'default'. The value can "
-        "also be provided via the environment variable "
-        "'AWS_PROFILE'.",
-        default="default")
+@option('--device', metavar='arn:aws:iam::123456788990:mfa/mirandel-smith',
+        help=HELP['device'])
+@option('--duration', type=int, help=HELP['duration'])
+@option('--profile', help=HELP['profile'], default="default")
 @option('--long-term-suffix', '--long-suffix', 'long_term_suffix',
-        help="The suffix appended to the profile name to"
-        "identify the long term credential section",
-        default="long-term")
+        help=HELP['long_term_suffix'], default="long-term")
 @option('--short-term-suffix', '--short-suffix', 'short_term_suffix',
-        help="The suffix appended to the profile name to"
-        "identify the short term credential section")
+        help=HELP['short_term_suffix'])
 @option('--assume-role', '--assume', 'role',
         metavar='arn:aws:iam::123456788990:role/RoleName',
-        help="The ARN of the AWS IAM Role you would like to "
-        "assume, if specified. This value can also be provided"
-        " via the environment variable 'MFA_ASSUME_ROLE'")
+        help=HELP['assume_role'])
 @option('--role-session-name', "role_session_name",
-        help="Friendly session name required when using ",
-        default=USER)
-@option('--force',
-        help="Refresh credentials even if currently valid.")
+        help=HELP['role_session_name'], default=USER)
+@option('--force', help=HELP['force'])
 @option('--log-level', 'log_level',
         type=Choice(['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'NOTSET'],
                     case_sensitive=False),
-        help="Set log level",
-        default=LOG_LEVEL)
-@option('--setup',
-        help="Setup a new log term credentials section",
-        is_flag=bool)
-@option('--token', '--mfa-token',
-        help="Provide MFA token as an argument",
-        default="")
-@option('--region',
-        help="AWS STS Region",
-        type=str)
-@option('--keychain',
-        is_flag=bool,
-        help="Use system keychain to store or retrieve long term credentials")
+        help=HELP['log_level'], default=LOG_LEVEL)
+@option('--setup', help=HELP['setup'], is_flag=bool)
+@option('--token', '--mfa-token', 'token', help=HELP['token'], default="")
+@option('--region', help=HELP['region'], type=str)
+@option('--keychain', is_flag=bool, help=HELP['keychain'])
 def main(device: str,
          duration: int,
          profile: str = "default",
@@ -135,15 +103,17 @@ def main(device: str,
          token: str = "",
          region: str = "",
          keychain: bool = False):
+    """
+    validate the config, get credentials, and assume role if needed
+    """
 
     # set up logging before we begin
     logger = setup_logger(log_level)
 
     if not path.isfile(AWS_CREDS_PATH):
         create_credentials_file = Confirm.ask(
-                "Could not locate credentials file at "
-                f"[green]{AWS_CREDS_PATH}[/green]. Would you like to create one?"
-                )
+                f"Could not locate credentials file at [green]{AWS_CREDS_PATH}[/]."
+                "Would you like to create one?")
 
         if create_credentials_file:
             # try creating directory and file
@@ -216,7 +186,7 @@ def validate(log: logging.Logger,
                            "The value for '--long-term-suffix' cannot "
                            "be equal to the value for '--short-term-suffix'")
 
-    # check assume role
+    # check AWS role
     if role:
         role_msg = f"with assumed role: {role}"
     elif credentials_obj.has_option(profile, 'assumed_role_arn'):
