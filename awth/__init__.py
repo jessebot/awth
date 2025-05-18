@@ -95,7 +95,7 @@ def setup_logger(level="", log_file=""):
 @option('--short-term-suffix', '--short-suffix', 'short_term_suffix',
         help="The suffix appended to the profile name to"
         "identify the short term credential section")
-@option('--assume-role', '--assume',
+@option('--assume-role', '--assume', 'role',
         metavar='arn:aws:iam::123456788990:role/RoleName',
         help="The ARN of the AWS IAM Role you would like to "
         "assume, if specified. This value can also be provided"
@@ -127,7 +127,7 @@ def main(device: str,
          profile: str = "default",
          long_term_suffix: str = "long-term",
          short_term_suffix: str = "",
-         assume_role: str = "",
+         role: str = "",
          role_session_name: str = USER,
          force: bool = False,
          log_level: str = LOG_LEVEL,
@@ -169,7 +169,7 @@ def main(device: str,
              profile,
              long_term_suffix,
              short_term_suffix,
-             assume_role,
+             role,
              keychain,
              device,
              duration,
@@ -184,15 +184,14 @@ def validate(log: logging.Logger,
              long_term_suffix: str = "",
              short_term_suffix: str = "",
              role_session_name: str = "",
-             assume_role: bool = False,
+             role: str = "",
              keychain: bool = False,
              device: str = "",
              duration: int = 0,
              token: str = "",
-             force: bool = False
-             ):
+             force: bool = False):
     """
-    validate all the options
+    validate all the options passed into the cli or main function
     """
 
     # check profile
@@ -218,8 +217,8 @@ def validate(log: logging.Logger,
                            "be equal to the value for '--short-term-suffix'")
 
     # check assume role
-    if assume_role:
-        role_msg = f"with assumed role: {assume_role}"
+    if role:
+        role_msg = f"with assumed role: {role}"
     elif credentials_obj.has_option(profile, 'assumed_role_arn'):
         role_msg = f"with assumed role: {credentials_obj.get(profile, 'assumed_role_arn')}"
     else:
@@ -266,19 +265,19 @@ def validate(log: logging.Logger,
                                'You must provide --device or MFA_DEVICE or set '
                                '"aws_mfa_device" in ".aws/credentials"')
 
-    # get assume_role from param or env var
-    if not assume_role:
+    # get role from param or env var
+    if not role:
         if environ.get('MFA_ASSUME_ROLE'):
-            assume_role = environ.get('MFA_ASSUME_ROLE')
+            role = environ.get('MFA_ASSUME_ROLE')
         elif credentials_obj.has_option(long_term_name, 'assume_role'):
-            assume_role = credentials_obj.get(long_term_name, 'assume_role')
+            role = credentials_obj.get(long_term_name, 'assume_role')
 
     # get duration from param, env var or set default
     if not duration:
         if environ.get('MFA_STS_DURATION'):
             duration = int(environ.get('MFA_STS_DURATION'))
         else:
-            duration = 3600 if assume_role else 43200
+            duration = 3600 if role else 43200
 
     # If this is False, only refresh credentials if expired. Otherwise
     # always refresh.
@@ -327,21 +326,21 @@ def validate(log: logging.Logger,
             force_refresh = True
         # There are not credentials for an assumed role,
         # but the user is trying to assume one
-        elif current_role is None and assume_role:
+        elif current_role is None and role:
             log.info(reup_message)
             force_refresh = True
         # There are current credentials for a role and
         # the role arn being provided is the same.
-        elif current_role is not None and assume_role and current_role == assume_role:
+        elif current_role is not None and role and current_role == role:
             pass
         # There are credentials for a current role and the role
         # that is attempting to be assumed is different
-        elif current_role is not None and assume_role and current_role != assume_role:
+        elif current_role is not None and role and current_role != role:
             log.info(reup_message)
             force_refresh = True
         # There are credentials for a current role and no role arn is
         # being supplied
-        elif current_role is not None and assume_role is None:
+        elif current_role is not None and role is None:
             log.info(reup_message)
             force_refresh = True
 
@@ -370,7 +369,7 @@ def validate(log: logging.Logger,
                         token,
                         device,
                         duration,
-                        assume_role,
+                        role,
                         short_term_suffix,
                         role_session_name,
                         region)
@@ -384,14 +383,13 @@ def get_credentials(log: logging.Logger,
                     token: str,
                     device: str,
                     duration: int,
-                    assume_role: str,
+                    role: str,
                     short_term_suffix: str,
                     role_session_name: str = "",
                     region: str = ""):
     """
-    Get credentials from AWS?
+    Get short term credentials
     """
-
     if token:
         log.debug("Received token as argument")
         mfa_token = str(token)
@@ -407,17 +405,17 @@ def get_credentials(log: logging.Logger,
         aws_secret_access_key=lt_access_key
     )
 
-    if assume_role:
+    if role:
 
         log.info("Assuming Role - Profile: %s, Role: %s, Duration: %s",
-                    short_term_name, assume_role, duration)
+                    short_term_name, role, duration)
         if not role_session_name:
             log_error_and_exit(log, "You must specify a role session name "
                                "via --role-session-name")
 
         try:
             response = client.assume_role(
-                RoleArn=assume_role,
+                RoleArn=role,
                 RoleSessionName=role_session_name,
                 DurationSeconds=duration,
                 SerialNumber=device,
@@ -430,7 +428,7 @@ def get_credentials(log: logging.Logger,
             log_error_and_exit(log, "Token must be six digits")
 
         credentials_obj.set(short_term_name, 'assumed_role', 'True')
-        credentials_obj.set(short_term_name, 'assumed_role_arn', assume_role)
+        credentials_obj.set(short_term_name, 'assumed_role_arn', role)
     else:
         log.info(f"Fetching Credentials - Profile: {short_term_name}, Duration: {duration}")
         try:
