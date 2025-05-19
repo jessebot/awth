@@ -200,12 +200,29 @@ screenreader friendly usage:
 Here are some environment variables you can optionally set instead of passing in arguments or setting parameters in your `~/.aws/*` files.
 
 ```bash
+# AWS credentails file
 AWS_SHARED_CREDENTIALS_FILE='~/.aws/credentials'
+
+# AWS config file
 AWS_SHARED_CONFIG_FILE='~/.aws/config'
+
+# AWS Credentials
+AWS_ACCESS_KEY_ID=""
+AWS_SECRET_ACCESS_KEY=""
+
+# which AWS profile to use ~/.aws/config
 AWS_PROFILE='default'
+
+# the arn of your MFA device in AWS
 MFA_DEVICE=''
+
+# this would be something like arn:aws:iam::123456788990:role/RoleName
 MFA_ASSUME_ROLE=''
-MFA_STS_DURATION=''
+
+# duration to keep valid token for your assumed role
+MFA_STS_DURATION='3600'
+
+# default env var to use
 AWS_REGION='eu-central-1'
 
 # this is only for generating a screenshot of the help menu, used for updating the README in this repo
