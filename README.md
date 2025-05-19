@@ -173,7 +173,7 @@ pretty usage:
 
 
 screenreader friendly usage:
-```
+```help
 --device arn:aws:iam::123456788990:mfa/mirandel-smith The MFA Device ARN. This value can also be provided via the environment variable 'MFA_DEVICE' or the ~/.aws/credentials variable 'aws_mfa_device'.
 
 --duration DURATION     The duration, in seconds, that the temporary credentials should remain valid. Minimum value: 900 (15 minutes). Maximum: 129600 (36 hours). Defaults to 43200 (12 hours), or 3600 (one hour) when using '--assume-role'. This value can also be provided via the environment variable 'MFA_STS_DURATION'.
@@ -184,13 +184,32 @@ screenreader friendly usage:
 
 --short-term-suffix SHORT_TERM_SUFFIX To identify the short term credential section by [<profile_name>-SHORT_TERM_SUFFIX]. Omit or use 'none' to identify the short term credential section by [<profile_name>].
 
---assume-role arn:aws:iam::123456788990:role/RoleName The ARN of the AWS IAM Role you would like to assume, if specified. This value can also be provided via the environment variable 'MFA_ASSUME_ROLE'
+--assume-role --assume arn:aws:iam::123456788990:role/RoleName The ARN of the AWS IAM Role you would like to assume, if specified. This value can also be provided via the environment variable 'MFA_ASSUME_ROLE'
 
 --role-session-name ROLE_SESSION_NAME Friendly session name required when using --assume- role. By default, this is your local username.
 
 --token TOKEN, --mfa-token TOKEN Provide MFA token as an argument
 
---no-keychain           Do not use system keychain to store or retrieve long term credentials
+--keychain           Use system keychain to store or retrieve long term credentials
+
+--region             AWS region to authenticate to
+```
+
+### Optional Environment Variables
+
+Here are some environment variables you can optionally set instead of passing in arguments or setting parameters in your `~/.aws/*` files.
+
+```bash
+AWS_SHARED_CREDENTIALS_FILE='~/.aws/credentials'
+AWS_SHARED_CONFIG_FILE='~/.aws/config'
+AWS_PROFILE='default'
+MFA_DEVICE=''
+MFA_ASSUME_ROLE=''
+MFA_STS_DURATION=''
+AWS_REGION='eu-central-1'
+
+# this is only for generating a screenshot of the help menu, used for updating the README in this repo
+AWTH_SCREENSHOT='False'
 ```
 
 **Argument precedence**: Command line arguments take precedence over environment variables.

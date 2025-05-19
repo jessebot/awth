@@ -234,7 +234,7 @@ def validate(log: logging.Logger,
         else:
             log_error_and_exit(log,
                                'You must provide --device or MFA_DEVICE or set '
-                               '"aws_mfa_device" in ".aws/credentials"')
+                               '"aws_mfa_device" in "~/.aws/credentials"')
 
     # get role from param or env var
     if not role:
