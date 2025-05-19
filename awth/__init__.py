@@ -139,6 +139,7 @@ def main(device: str,
              profile,
              long_term_suffix,
              short_term_suffix,
+             region,
              role,
              keychain,
              device,
@@ -154,6 +155,7 @@ def validate(log: logging.Logger,
              long_term_suffix: str = "",
              short_term_suffix: str = "",
              role_session_name: str = "",
+             region: str = "",
              role: str = "",
              keychain: bool = False,
              device: str = "",
@@ -173,7 +175,6 @@ def validate(log: logging.Logger,
         long_term_name = profile
     else:
         long_term_name = f'{profile}-{long_term_suffix}'
-
 
     # check short_term_suffix
     if not short_term_suffix or short_term_suffix.lower() == 'none':
@@ -241,6 +242,8 @@ def validate(log: logging.Logger,
             role = environ.get('MFA_ASSUME_ROLE')
         elif credentials_obj.has_option(long_term_name, 'assume_role'):
             role = credentials_obj.get(long_term_name, 'assume_role')
+        elif aws_config_obj.has_option(short_term_name, 'role_arn'):
+            role = aws_config_obj.get(short_term_name, 'role_arn')
 
     # get duration from param, env var or set default
     if not duration:
@@ -248,6 +251,9 @@ def validate(log: logging.Logger,
             duration = int(environ.get('MFA_STS_DURATION'))
         else:
             duration = 3600 if role else 43200
+
+    if not region and aws_config_obj.has_option(profile, 'region'):
+        region = aws_config_obj.get(profile, 'region')
 
     # If this is False, only refresh credentials if expired. Otherwise
     # always refresh.
@@ -330,7 +336,6 @@ def validate(log: logging.Logger,
                 f" they will expire at {exp}")
 
     if should_refresh:
-        region = aws_config_obj.get(profile, 'region')
         get_credentials(log,
                         credentials_obj,
                         short_term_name,
@@ -376,9 +381,9 @@ def get_credentials(log: logging.Logger,
     )
 
     if role:
-
-        log.info("Assuming Role - Profile: %s, Role: %s, Duration: %s",
-                    short_term_name, role, duration)
+        log.info(f"Assuming Role - Profile: {short_term_name}, "
+                 f"Role: {role}, "
+                 f"Duration: {duration}")
         if not role_session_name:
             log_error_and_exit(log, "You must specify a role session name "
                                "via --role-session-name")
@@ -441,11 +446,14 @@ def get_credentials(log: logging.Logger,
         'expiration',
         response['Credentials']['Expiration'].strftime('%Y-%m-%d %H:%M:%S')
     )
+
     with open(AWS_CREDS_PATH, 'w') as configfile:
         credentials_obj.write(configfile)
+
     log.info(
         f"Success! Your credentials will expire in {duration} seconds at: "
         f"{response['Credentials']['Expiration']}")
+
     sys.exit(0)
 
 
