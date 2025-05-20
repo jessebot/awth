@@ -56,17 +56,20 @@ def options_help() -> dict:
                        "also be provided via the environment variable "
                        "'AWS_PROFILE'.",
 
-            'long-term-suffix': "The suffix appended to the profile name to"
+            'long_term_suffix': "The suffix appended to the profile name to"
                                 "identify the long term credential section",
-            'short-term-suffix': "The suffix appended to the profile name to"
+
+            'short_term_suffix': "The suffix appended to the profile name to"
                                  "identify the short term credential section",
-            'assume-role': "The ARN of the AWS IAM Role you would like to "
+
+            'assume_role': "The ARN of the AWS IAM Role you would like to "
                            "assume, if specified. This value can also be provided"
                            " via the environment variable 'MFA_ASSUME_ROLE'. "
                            "Example: 'arn:aws:iam::123456788990:role/RoleName'",
-            'role-session-name': "Friendly session name required when using --assume-role",
+
+            'role_session_name': "Friendly session name required when using --assume-role",
             'force': "Refresh credentials even if currently valid.",
-            'log-level': f"Set log level. {log_levels}",
+            'log_level': f"Set log level. {log_levels}",
             'setup': "Setup a new log term credentials section",
             'token': "Provide MFA token as an argument",
             'region': "AWS STS Region",

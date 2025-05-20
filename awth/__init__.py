@@ -68,66 +68,34 @@ def setup_logger(level="", log_file=""):
 
 
 @command(cls=RichCommand)
-@option('--device',
-        metavar='arn:aws:iam::123456788990:mfa/mirandel-smith',
-        help="The MFA Device ARN. This value can also be "
-        "provided via the environment variable 'MFA_DEVICE' or"
-        " the ~/.aws/credentials variable 'aws_mfa_device'.")
-@option('--duration',
-        type=int,
-        help="The duration, in seconds, that the temporary "
-             "credentials should remain valid. Minimum value: "
-             "900 (15 minutes). Maximum: 129600 (36 hours). "
-             "Defaults to 43200 (12 hours), or 3600 (one "
-             "hour) when using '--assume-role'. This value "
-             "can also be provided via the environment "
-             "variable 'MFA_STS_DURATION'. ")
-@option('--profile',
-        help="If using profiles, specify the name here. The "
-        "default profile name is 'default'. The value can "
-        "also be provided via the environment variable "
-        "'AWS_PROFILE'.",
-        default="default")
+@option('--device', metavar='arn:aws:iam::123456788990:mfa/mirandel-smith',
+        help=HELP['device'])
+@option('--duration', type=int, help=HELP['duration'])
+@option('--profile', help=HELP['profile'], default="default")
 @option('--long-term-suffix', '--long-suffix', 'long_term_suffix',
-        help="The suffix appended to the profile name to"
-        "identify the long term credential section",
-        default="long-term")
+        help=HELP['long_term_suffix'], default="long-term")
 @option('--short-term-suffix', '--short-suffix', 'short_term_suffix',
-        help="The suffix appended to the profile name to"
-        "identify the short term credential section")
-@option('--assume-role', '--assume',
+        help=HELP['short_term_suffix'])
+@option('--assume-role', '--assume', 'role',
         metavar='arn:aws:iam::123456788990:role/RoleName',
-        help="The ARN of the AWS IAM Role you would like to "
-        "assume, if specified. This value can also be provided"
-        " via the environment variable 'MFA_ASSUME_ROLE'")
+        help=HELP['assume_role'])
 @option('--role-session-name', "role_session_name",
-        help="Friendly session name required when using ",
-        default=USER)
-@option('--force',
-        help="Refresh credentials even if currently valid.")
+        help=HELP['role_session_name'], default=USER)
+@option('--force', help=HELP['force'])
 @option('--log-level', 'log_level',
         type=Choice(['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'NOTSET'],
                     case_sensitive=False),
-        help="Set log level",
-        default=LOG_LEVEL)
-@option('--setup',
-        help="Setup a new log term credentials section",
-        is_flag=bool)
-@option('--token', '--mfa-token',
-        help="Provide MFA token as an argument",
-        default="")
-@option('--region',
-        help="AWS STS Region",
-        type=str)
-@option('--keychain',
-        is_flag=bool,
-        help="Use system keychain to store or retrieve long term credentials")
+        help=HELP['log_level'], default=LOG_LEVEL)
+@option('--setup', help=HELP['setup'], is_flag=bool)
+@option('--token', '--mfa-token', 'token', help=HELP['token'], default="")
+@option('--region', help=HELP['region'], type=str)
+@option('--keychain', is_flag=bool, help=HELP['keychain'])
 def main(device: str,
          duration: int,
          profile: str = "default",
          long_term_suffix: str = "long-term",
          short_term_suffix: str = "",
-         assume_role: str = "",
+         role: str = "",
          role_session_name: str = USER,
          force: bool = False,
          log_level: str = LOG_LEVEL,
@@ -135,15 +103,17 @@ def main(device: str,
          token: str = "",
          region: str = "",
          keychain: bool = False):
+    """
+    validate the config, get credentials, and assume role if needed
+    """
 
     # set up logging before we begin
     logger = setup_logger(log_level)
 
     if not path.isfile(AWS_CREDS_PATH):
         create_credentials_file = Confirm.ask(
-                "Could not locate credentials file at "
-                f"[green]{AWS_CREDS_PATH}[/green]. Would you like to create one?"
-                )
+                f"Could not locate credentials file at [green]{AWS_CREDS_PATH}[/]."
+                "Would you like to create one?")
 
         if create_credentials_file:
             # try creating directory and file
@@ -169,7 +139,8 @@ def main(device: str,
              profile,
              long_term_suffix,
              short_term_suffix,
-             assume_role,
+             region,
+             role,
              keychain,
              device,
              duration,
@@ -184,15 +155,15 @@ def validate(log: logging.Logger,
              long_term_suffix: str = "",
              short_term_suffix: str = "",
              role_session_name: str = "",
-             assume_role: bool = False,
+             region: str = "",
+             role: str = "",
              keychain: bool = False,
              device: str = "",
              duration: int = 0,
              token: str = "",
-             force: bool = False
-             ):
+             force: bool = False):
     """
-    validate all the options
+    validate all the options passed into the cli or main function
     """
 
     # check profile
@@ -200,11 +171,10 @@ def validate(log: logging.Logger,
         profile = environ.get('AWS_PROFILE', 'default')
 
     # check long_term_suffix
-    if long_term_suffix.lower() == 'none':
+    if not long_term_suffix or long_term_suffix.lower() == 'none':
         long_term_name = profile
     else:
         long_term_name = f'{profile}-{long_term_suffix}'
-
 
     # check short_term_suffix
     if not short_term_suffix or short_term_suffix.lower() == 'none':
@@ -217,9 +187,9 @@ def validate(log: logging.Logger,
                            "The value for '--long-term-suffix' cannot "
                            "be equal to the value for '--short-term-suffix'")
 
-    # check assume role
-    if assume_role:
-        role_msg = f"with assumed role: {assume_role}"
+    # check AWS role
+    if role:
+        role_msg = f"with assumed role: {role}"
     elif credentials_obj.has_option(profile, 'assumed_role_arn'):
         role_msg = f"with assumed role: {credentials_obj.get(profile, 'assumed_role_arn')}"
     else:
@@ -238,47 +208,58 @@ def validate(log: logging.Logger,
 
     # if using the AWS credentials file to store credentials
     else:
-        try:
+        # first check the default long term name for the long term credentials
+        if credentials_obj.has_section(long_term_name):
             log.info(f"Checking {AWS_CREDS_PATH} for AWS {long_term_name} credentials...")
             key_id = credentials_obj.get(long_term_name, 'aws_access_key_id')
-            log.debug(f"key id: {key_id}")
             access_key = credentials_obj.get(long_term_name, 'aws_secret_access_key')
-            log.debug(f"access_key: {access_key}")
             device = credentials_obj.get(long_term_name, 'aws_mfa_device')
             log.debug(f"device: {device}")
-        except NoSectionError:
+        # then check literally [default-long-term] for the long term credentials
+        elif credentials_obj.has_section(f"default-{long_term_suffix}"):
+            log.info(f"Checking {AWS_CREDS_PATH} for AWS default-{long_term_suffix} credentials...")
+            key_id = credentials_obj.get(f"default-{long_term_suffix}", 'aws_access_key_id')
+            access_key = credentials_obj.get(f"default-{long_term_suffix}", 'aws_secret_access_key')
+            device = credentials_obj.get(f"default-{long_term_suffix}", 'aws_mfa_device')
+            log.debug(f"device: {device}")
+        else:
             log_error_and_exit(log,
-                    f"Long term credentials session '{long_term_name}' is missing. "
-                    "You must add this section to your credentials file "
-                    "along with your long term 'aws_access_key_id' and "
-                    "'aws_secret_access_key'")
-        except NoOptionError as e:
-            log_error_and_exit(log, e)
+                    f"Long term credentials session '{long_term_name}' and "
+                    f"default-{long_term_suffix} are missing. You must add one "
+                    "of these sections to your credentials file along with your "
+                    "long term 'aws_access_key_id' and 'aws_secret_access_key'")
 
-    # get device from param, env var or config
+    # get device from param, env var
+    log.debug("Checking for AWS MFA Device...")
     if not device:
         if environ.get('MFA_DEVICE'):
             device = environ.get('MFA_DEVICE')
-        elif credentials_obj.has_option(long_term_name, 'aws_mfa_device'):
-            device = credentials_obj.get(long_term_name, 'aws_mfa_device')
         else:
             log_error_and_exit(log,
                                'You must provide --device or MFA_DEVICE or set '
-                               '"aws_mfa_device" in ".aws/credentials"')
+                               '"aws_mfa_device" in "~/.aws/credentials"')
 
-    # get assume_role from param or env var
-    if not assume_role:
+    # get role from param or env var
+    if not role:
         if environ.get('MFA_ASSUME_ROLE'):
-            assume_role = environ.get('MFA_ASSUME_ROLE')
+            role = environ.get('MFA_ASSUME_ROLE')
         elif credentials_obj.has_option(long_term_name, 'assume_role'):
-            assume_role = credentials_obj.get(long_term_name, 'assume_role')
+            role = credentials_obj.get(long_term_name, 'assume_role')
+        elif aws_config_obj.has_option(short_term_name, 'role_arn'):
+            role = aws_config_obj.get(f'profile {short_term_name}', 'role_arn')
 
     # get duration from param, env var or set default
     if not duration:
         if environ.get('MFA_STS_DURATION'):
             duration = int(environ.get('MFA_STS_DURATION'))
         else:
-            duration = 3600 if assume_role else 43200
+            if role:
+                duration = 3600
+            else:
+                duration = 43200
+
+    if not region and aws_config_obj.has_option(profile, 'region'):
+        region = aws_config_obj.get(profile, 'region')
 
     # If this is False, only refresh credentials if expired. Otherwise
     # always refresh.
@@ -327,21 +308,21 @@ def validate(log: logging.Logger,
             force_refresh = True
         # There are not credentials for an assumed role,
         # but the user is trying to assume one
-        elif current_role is None and assume_role:
+        elif current_role is None and role:
             log.info(reup_message)
             force_refresh = True
         # There are current credentials for a role and
         # the role arn being provided is the same.
-        elif current_role is not None and assume_role and current_role == assume_role:
+        elif current_role is not None and role and current_role == role:
             pass
         # There are credentials for a current role and the role
         # that is attempting to be assumed is different
-        elif current_role is not None and assume_role and current_role != assume_role:
+        elif current_role is not None and role and current_role != role:
             log.info(reup_message)
             force_refresh = True
         # There are credentials for a current role and no role arn is
         # being supplied
-        elif current_role is not None and assume_role is None:
+        elif current_role is not None and role is None:
             log.info(reup_message)
             force_refresh = True
 
@@ -361,7 +342,6 @@ def validate(log: logging.Logger,
                 f" they will expire at {exp}")
 
     if should_refresh:
-        region = aws_config_obj.get(profile, 'region')
         get_credentials(log,
                         credentials_obj,
                         short_term_name,
@@ -370,7 +350,7 @@ def validate(log: logging.Logger,
                         token,
                         device,
                         duration,
-                        assume_role,
+                        role,
                         short_term_suffix,
                         role_session_name,
                         region)
@@ -384,14 +364,13 @@ def get_credentials(log: logging.Logger,
                     token: str,
                     device: str,
                     duration: int,
-                    assume_role: str,
+                    role: str,
                     short_term_suffix: str,
                     role_session_name: str = "",
                     region: str = ""):
     """
-    Get credentials from AWS?
+    Get short term credentials
     """
-
     if token:
         log.debug("Received token as argument")
         mfa_token = str(token)
@@ -407,17 +386,17 @@ def get_credentials(log: logging.Logger,
         aws_secret_access_key=lt_access_key
     )
 
-    if assume_role:
-
-        log.info("Assuming Role - Profile: %s, Role: %s, Duration: %s",
-                    short_term_name, assume_role, duration)
+    if role:
+        log.info(f"Assuming Role - Profile: {short_term_name}, "
+                 f"Role: {role}, "
+                 f"Duration: {duration}")
         if not role_session_name:
             log_error_and_exit(log, "You must specify a role session name "
                                "via --role-session-name")
 
         try:
             response = client.assume_role(
-                RoleArn=assume_role,
+                RoleArn=role,
                 RoleSessionName=role_session_name,
                 DurationSeconds=duration,
                 SerialNumber=device,
@@ -430,7 +409,7 @@ def get_credentials(log: logging.Logger,
             log_error_and_exit(log, "Token must be six digits")
 
         credentials_obj.set(short_term_name, 'assumed_role', 'True')
-        credentials_obj.set(short_term_name, 'assumed_role_arn', assume_role)
+        credentials_obj.set(short_term_name, 'assumed_role_arn', role)
     else:
         log.info(f"Fetching Credentials - Profile: {short_term_name}, Duration: {duration}")
         try:
@@ -473,11 +452,14 @@ def get_credentials(log: logging.Logger,
         'expiration',
         response['Credentials']['Expiration'].strftime('%Y-%m-%d %H:%M:%S')
     )
+
     with open(AWS_CREDS_PATH, 'w') as configfile:
         credentials_obj.write(configfile)
+
     log.info(
         f"Success! Your credentials will expire in {duration} seconds at: "
         f"{response['Credentials']['Expiration']}")
+
     sys.exit(0)
 
 

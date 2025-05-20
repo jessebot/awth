@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "awth"
-version = "0.1.0a6"
+version = "0.1.0a7"
 description = "awth your way into aws, again, with mfa"
 authors = [
 	"jessebot <jessebot@linux.com>",
@@ -21,7 +21,7 @@ packages      = [{include = "awth"}]
 boto3         = "^1.38"
 click         = "^8.1"
 keyring       = "^25.6"
-python        = "^3.12"
+python        = ">=3.10,<3.13"
 rich          = "^13.6"
 secretstorage = "^3.3"
 
