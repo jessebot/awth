@@ -171,7 +171,7 @@ def validate(log: logging.Logger,
         profile = environ.get('AWS_PROFILE', 'default')
 
     # check long_term_suffix
-    if long_term_suffix.lower() == 'none':
+    if not long_term_suffix or long_term_suffix.lower() == 'none':
         long_term_name = profile
     else:
         long_term_name = f'{profile}-{long_term_suffix}'
@@ -208,29 +208,32 @@ def validate(log: logging.Logger,
 
     # if using the AWS credentials file to store credentials
     else:
-        try:
+        # first check the default long term name for the long term credentials
+        if credentials_obj.has_section(long_term_name):
             log.info(f"Checking {AWS_CREDS_PATH} for AWS {long_term_name} credentials...")
             key_id = credentials_obj.get(long_term_name, 'aws_access_key_id')
-            log.debug(f"key id: {key_id}")
             access_key = credentials_obj.get(long_term_name, 'aws_secret_access_key')
-            log.debug(f"access_key: {access_key}")
             device = credentials_obj.get(long_term_name, 'aws_mfa_device')
             log.debug(f"device: {device}")
-        except NoSectionError:
+        # then check literally [default-long-term] for the long term credentials
+        elif credentials_obj.has_section(f"default-{long_term_suffix}"):
+            log.info(f"Checking {AWS_CREDS_PATH} for AWS default-{long_term_suffix} credentials...")
+            key_id = credentials_obj.get(f"default-{long_term_suffix}", 'aws_access_key_id')
+            access_key = credentials_obj.get(f"default-{long_term_suffix}", 'aws_secret_access_key')
+            device = credentials_obj.get(f"default-{long_term_suffix}", 'aws_mfa_device')
+            log.debug(f"device: {device}")
+        else:
             log_error_and_exit(log,
-                    f"Long term credentials session '{long_term_name}' is missing. "
-                    "You must add this section to your credentials file "
-                    "along with your long term 'aws_access_key_id' and "
-                    "'aws_secret_access_key'")
-        except NoOptionError as e:
-            log_error_and_exit(log, e)
+                    f"Long term credentials session '{long_term_name}' and "
+                    f"default-{long_term_suffix} are missing. You must add one "
+                    "of these sections to your credentials file along with your "
+                    "long term 'aws_access_key_id' and 'aws_secret_access_key'")
 
-    # get device from param, env var or config
+    # get device from param, env var
+    log.debug("Checking for AWS MFA Device...")
     if not device:
         if environ.get('MFA_DEVICE'):
             device = environ.get('MFA_DEVICE')
-        elif credentials_obj.has_option(long_term_name, 'aws_mfa_device'):
-            device = credentials_obj.get(long_term_name, 'aws_mfa_device')
         else:
             log_error_and_exit(log,
                                'You must provide --device or MFA_DEVICE or set '
@@ -243,14 +246,17 @@ def validate(log: logging.Logger,
         elif credentials_obj.has_option(long_term_name, 'assume_role'):
             role = credentials_obj.get(long_term_name, 'assume_role')
         elif aws_config_obj.has_option(short_term_name, 'role_arn'):
-            role = aws_config_obj.get(short_term_name, 'role_arn')
+            role = aws_config_obj.get(f'profile {short_term_name}', 'role_arn')
 
     # get duration from param, env var or set default
     if not duration:
         if environ.get('MFA_STS_DURATION'):
             duration = int(environ.get('MFA_STS_DURATION'))
         else:
-            duration = 3600 if role else 43200
+            if role:
+                duration = 3600
+            else:
+                duration = 43200
 
     if not region and aws_config_obj.has_option(profile, 'region'):
         region = aws_config_obj.get(profile, 'region')
